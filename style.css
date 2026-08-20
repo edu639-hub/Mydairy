@@ -1,0 +1,1174 @@
+/* ==========================================================================
+   위드 알러지 세이프쿡 (With Allergy SafeCook) 스타일시트
+   - 민트/틸(Mint & Teal) 컬러 테마 기반 모던 & 클린 UI
+   - 6대 알레르기 유발 물질 커스텀 체크박스 필터 UI
+   - 재료 목록 및 알러지 성분 경고 아이콘이 포함된 레시피 카드 그리드
+   - 완벽한 반응형(Mobile, Tablet, Desktop) 지원
+   ========================================================================== */
+
+/* 1. 디자인 시스템 변수 정의 (CSS Custom Properties) */
+:root {
+    /* 메인 민트/틸(Teal) 컬러 팔레트 */
+    --primary-50: #f0fdfa;
+    --primary-100: #ccfbf1;
+    --primary-200: #99f6e4;
+    --primary-300: #5eead4;
+    --primary-400: #2dd4bf;
+    --primary-500: #14b8a6;
+    --primary-600: #0d9488;
+    --primary-700: #0f766e;
+    --primary-800: #115e59;
+    --primary-900: #134e4a;
+
+    /* 보조 및 상태 색상 */
+    --accent-color: #f97316;     /* 오렌지 꿀팁 포인트 */
+    --warning-color: #f59e0b;    /* 알러지 주의/경고 노랑-주황 */
+    --warning-light: #fffbeb;
+    --warning-border: #fde68a;
+    --warning-text: #b45309;
+    --danger-color: #ef4444;     /* 알러지 경고/제외 빨강 */
+    --danger-light: #fef2f2;
+    --danger-border: #fca5a5;
+    --danger-text: #b91c1c;
+    --success-color: #10b981;    /* 안심 뱃지 */
+    --success-light: #d1fae5;
+
+    /* 뉴트럴 및 배경/텍스트 색상 */
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-alt: #f1f5f9;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    --border-color: #e2e8f0;
+    --border-focus: #0d9488;
+
+    /* 그림자 (Shadows) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+    --shadow-teal: 0 10px 25px -5px rgba(13, 148, 136, 0.25);
+    --shadow-danger: 0 4px 12px rgba(239, 68, 68, 0.15);
+
+    /* 모서리 곡률 (Border Radius) */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-full: 9999px;
+
+    /* 트랜지션 */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+}
+
+/* 2. 전역 리셋 및 기본 설정 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 스크린 리더 전용 숨김 클래스 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 3. 헤더 영역 (Header) */
+.site-header {
+    background: linear-gradient(135deg, #ffffff 0%, var(--primary-50) 100%);
+    border-bottom: 1px solid var(--primary-100);
+    padding: 18px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-sm);
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-400));
+    color: white;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);
+}
+
+.brand-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--primary-900);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.brand-title .highlight {
+    color: var(--primary-600);
+}
+
+.brand-slogan {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+/* 상단 검색바 */
+.search-box {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 40px 12px 44px;
+    background-color: var(--bg-surface);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    color: var(--text-main);
+    outline: none;
+    transition: all var(--transition-normal);
+}
+
+.search-box input:focus {
+    border-color: var(--primary-600);
+    box-shadow: 0 0 0 4px var(--primary-100);
+    background-color: #ffffff;
+}
+
+.clear-btn {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clear-btn:hover {
+    color: var(--text-main);
+}
+
+/* 4. 메인 컨테이너 */
+.main-content {
+    padding: 28px 0 60px;
+}
+
+.content-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 5. 알러지 필터 섹션 */
+.filter-section {
+    background-color: var(--bg-surface);
+    border: 1.5px solid var(--primary-100);
+    border-radius: var(--radius-lg);
+    padding: 24px 26px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.filter-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.filter-icon {
+    font-size: 1.5rem;
+    color: var(--primary-600);
+    background-color: var(--primary-50);
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-title {
+    font-size: 1.22rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.filter-subtitle {
+    font-size: 0.86rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+.filter-subtitle strong {
+    color: var(--danger-text);
+    background-color: var(--danger-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.btn-action-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: transparent;
+    border: 1.5px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-action-outline:hover {
+    background-color: var(--danger-light);
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+}
+
+/* 5-1. 커스텀 체크박스 그리드 */
+.allergy-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+}
+
+/* 개별 체크박스 카드 컴포넌트 */
+.checkbox-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px;
+    background-color: var(--bg-alt);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    user-select: none;
+    transition: all var(--transition-normal);
+}
+
+.checkbox-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* 커스텀 체크 표시 박스 */
+.checkbox-custom {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--text-light);
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.checkbox-custom .check-icon {
+    color: white;
+    font-size: 0.7rem;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all var(--transition-fast);
+}
+
+.checkbox-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.allergy-emoji {
+    font-size: 2rem;
+    margin-bottom: 2px;
+    transition: transform var(--transition-fast);
+}
+
+.allergy-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.allergy-badge {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-color);
+}
+
+.checkbox-card:hover {
+    background-color: #ffffff;
+    border-color: var(--primary-300);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.checkbox-card:hover .allergy-emoji {
+    transform: scale(1.1);
+}
+
+/* 체크박스 선택(Checked) 활성화 상태 */
+.checkbox-card:has(input[type="checkbox"]:checked) {
+    background-color: var(--danger-light);
+    border-color: var(--danger-color);
+    box-shadow: var(--shadow-danger);
+}
+
+.checkbox-card:has(input[type="checkbox"]:checked) .checkbox-custom {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.checkbox-card:has(input[type="checkbox"]:checked) .checkbox-custom .check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.checkbox-card:has(input[type="checkbox"]:checked) .allergy-name {
+    color: var(--danger-text);
+}
+
+.checkbox-card:has(input[type="checkbox"]:checked) .allergy-badge {
+    background-color: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
+}
+
+.checkbox-card:has(input[type="checkbox"]:focus-visible) {
+    outline: 3px solid var(--primary-500);
+    outline-offset: 2px;
+}
+
+/* 5-2. 선택된 알러지 실시간 요약 알림 바 */
+.selected-summary-bar {
+    margin-top: 18px;
+    padding: 12px 18px;
+    background-color: #fff1f2;
+    border-left: 4px solid var(--danger-color);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.88rem;
+    animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.summary-label {
+    font-weight: 700;
+    color: var(--danger-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.badge-excluded {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #ffffff;
+    color: var(--danger-text);
+    border: 1.5px solid var(--danger-color);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.badge-excluded i {
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 2px;
+    border-radius: 50%;
+}
+
+.badge-excluded i:hover {
+    background-color: var(--danger-light);
+}
+
+/* 6. 레시피 탐색 컨트롤 바 */
+.controls-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.category-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.tab-btn {
+    background-color: var(--bg-surface);
+    border: 1.5px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 9px 20px;
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.tab-btn:hover {
+    color: var(--primary-700);
+    border-color: var(--primary-400);
+}
+
+.tab-btn.active {
+    background-color: var(--primary-600);
+    color: white;
+    border-color: var(--primary-600);
+    box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25);
+}
+
+.controls-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.result-count {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+}
+
+.result-count strong {
+    color: var(--primary-700);
+    font-size: 1.1rem;
+}
+
+.sort-select {
+    padding: 8px 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-surface);
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text-main);
+    outline: none;
+    cursor: pointer;
+}
+
+.sort-select:focus {
+    border-color: var(--primary-600);
+}
+
+/* 7. 레시피 카드 그리드 */
+.recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 24px;
+}
+
+/* 개별 레시피 카드 */
+.recipe-card {
+    background-color: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+    cursor: pointer;
+}
+
+.recipe-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-teal);
+    border-color: var(--primary-400);
+}
+
+/* 카드 이미지 영역 */
+.card-image-wrap {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    background-color: var(--bg-alt);
+    overflow: hidden;
+}
+
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.recipe-card:hover .card-image {
+    transform: scale(1.05);
+}
+
+/* 카테고리 뱃지 */
+.card-category-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background-color: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(4px);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+}
+
+/* 카드 본문 */
+.card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 6px;
+    line-height: 1.35;
+}
+
+.card-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+}
+
+/* 요리 메타 정보 (시간, 난이도) */
+.card-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.meta-item i {
+    color: var(--primary-600);
+}
+
+/* 7-1. 카드 내 재료 목록 영역 (Ingredients Section) */
+.card-ingredients-wrap {
+    margin-bottom: 14px;
+    background-color: var(--bg-alt);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+}
+
+.card-ingredients-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-ingredients-title .title-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-ingredients-title .allergy-hint {
+    font-size: 0.72rem;
+    color: var(--warning-text);
+    font-weight: 600;
+}
+
+.card-ingredients-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* 일반 식재료 칩 */
+.ingredient-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+/* 알러지 유발 가능 식재료 칩 (작은 경고 아이콘 포함) */
+.ingredient-chip.has-allergen {
+    background-color: var(--warning-light);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+    font-weight: 700;
+}
+
+.ingredient-chip .warning-icon {
+    color: var(--warning-color);
+    font-size: 0.75rem;
+    animation: pulseIcon 2s infinite ease-in-out;
+}
+
+@keyframes pulseIcon {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+.ingredient-chip .allergen-tag {
+    font-size: 0.7rem;
+    background-color: #fde68a;
+    color: #92400e;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-left: 2px;
+}
+
+/* 알러지 안심 뱃지 영역 */
+.card-safe-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    margin-bottom: 14px;
+}
+
+.badge-free {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--primary-50);
+    color: var(--primary-700);
+    border: 1px solid var(--primary-200);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-free i {
+    font-size: 0.7rem;
+    color: var(--primary-500);
+}
+
+/* 레시피 카드 버튼 */
+.btn-view-recipe {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--primary-50);
+    color: var(--primary-700);
+    border: 1px solid var(--primary-200);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all var(--transition-fast);
+}
+
+.recipe-card:hover .btn-view-recipe {
+    background-color: var(--primary-600);
+    color: white;
+    border-color: var(--primary-600);
+}
+
+/* 8. 빈 결과 상태 (Empty State) */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background-color: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--border-color);
+    margin-top: 10px;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: var(--primary-300);
+    margin-bottom: 16px;
+}
+
+.empty-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.empty-description {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--primary-600);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    transition: all var(--transition-normal);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-700);
+    transform: translateY(-2px);
+}
+
+/* 9. 레시피 상세 모달 (Modal) */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+
+.modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-dialog {
+    background-color: var(--bg-surface);
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow-y: auto;
+    transform: scale(0.95);
+    transition: transform var(--transition-normal);
+}
+
+.modal-backdrop.active .modal-dialog {
+    transform: scale(1);
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all var(--transition-fast);
+}
+
+.modal-close-btn:hover {
+    background-color: var(--danger-light);
+    color: var(--danger-text);
+    border-color: var(--danger-color);
+}
+
+/* 모달 내부 콘텐츠 */
+.modal-hero-img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+}
+
+.modal-inner {
+    padding: 28px;
+}
+
+.modal-header-info {
+    margin-bottom: 20px;
+}
+
+.modal-category {
+    color: var(--primary-600);
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 4px 0 10px;
+}
+
+.modal-meta-row {
+    display: flex;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.modal-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-900);
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 2px solid var(--primary-100);
+    padding-bottom: 6px;
+}
+
+.modal-section-title i {
+    color: var(--primary-600);
+}
+
+/* 모달 알러지 안전 정보 박스 */
+.modal-allergy-notice {
+    background-color: var(--primary-50);
+    border: 1px solid var(--primary-200);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 0.88rem;
+}
+
+.modal-allergy-notice strong {
+    color: var(--primary-800);
+}
+
+/* 대체 재료 꿀팁 */
+.tip-box {
+    background-color: #fffbeb;
+    border-left: 4px solid var(--accent-color);
+    padding: 12px 16px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin: 16px 0;
+    font-size: 0.85rem;
+    color: #92400e;
+}
+
+/* 재료 목록 리스트 */
+.ingredients-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    list-style: none;
+    margin-bottom: 16px;
+}
+
+.ingredients-list li {
+    background-color: var(--bg-alt);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* 조리 순서 리스트 */
+.steps-list {
+    list-style: none;
+    counter-reset: step-counter;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.steps-list li {
+    position: relative;
+    padding-left: 38px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+.steps-list li::before {
+    counter-increment: step-counter;
+    content: counter(step-counter);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 26px;
+    height: 26px;
+    background-color: var(--primary-600);
+    color: white;
+    font-weight: 700;
+    font-size: 0.8rem;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 10. 푸터 (Footer) */
+.site-footer {
+    background-color: var(--text-main);
+    color: #94a3b8;
+    padding: 40px 0 30px;
+    font-size: 0.85rem;
+    border-top: 1px solid #334155;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.footer-logo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.footer-logo i {
+    color: var(--primary-400);
+}
+
+.footer-disclaimer {
+    border-top: 1px solid #1e293b;
+    padding-top: 16px;
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+.footer-disclaimer strong {
+    color: #cbd5e1;
+}
+
+.copyright {
+    margin-top: 10px;
+    color: #64748b;
+}
+
+/* 11. 반응형 미디어 쿼리 (Responsive Media Queries) */
+
+/* 태블릿 (1024px 이하) */
+@media (max-width: 1024px) {
+    .allergy-checkbox-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+}
+
+/* 중간 태블릿 / 모바일 가로 (768px 이하) */
+@media (max-width: 768px) {
+    .header-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .filter-section {
+        padding: 18px;
+    }
+
+    .allergy-checkbox-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .checkbox-card {
+        padding: 12px 8px;
+    }
+
+    .allergy-emoji {
+        font-size: 1.6rem;
+    }
+
+    .allergy-name {
+        font-size: 0.9rem;
+    }
+
+    .recipe-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
+    .controls-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .controls-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .modal-dialog {
+        max-height: 95vh;
+        margin: 10px;
+    }
+
+    .modal-inner {
+        padding: 20px;
+    }
+}
+
+/* 모바일 소형 (480px 이하) */
+@media (max-width: 480px) {
+    .brand-title {
+        font-size: 1.15rem;
+    }
+
+    .allergy-checkbox-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .checkbox-custom {
+        top: 6px;
+        right: 6px;
+        width: 18px;
+        height: 18px;
+    }
+
+    .recipe-grid {
+        grid-template-columns: 1fr;
+    }
+}

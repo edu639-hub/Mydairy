@@ -1,9 +1,18 @@
 {
   "version": 2,
-  "rewrites": [
+  "name": "with-allergy-safecook",
+  "cleanUrls": true,
+  "routes": [
     {
-      "source": "/api/analyze",
-      "destination": "/api/analyze.js"
+      "src": "/recipes.json",
+      "headers": {
+        "cache-control": "s-maxage=3600, stale-while-revalidate"
+      },
+      "dest": "/recipes.json"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
