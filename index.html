@@ -1125,7 +1125,7 @@
                             <span>❌ AI 분석 처리 오류 안내</span>
                             <span id="errorCodeBadge" class="error-code-badge">Error</span>
                         </div>
-                        <p class="error-guide-text">서버로부터 응답을 처리하는 중 오류가 발생했습니다. 아래 상세 내용을 확인해 주세요:</p>
+                        <p class="error-guide-text">응답 처리 중 오류가 발생했습니다. 아래 상세 내용을 확인해 주세요:</p>
                         <div id="errorDetailsBox" class="error-details-box"></div>
                     </div>
 
@@ -1190,7 +1190,7 @@
         <span>☁️ 파이어베이스 클라우드에 안전하게 저장되었습니다!</span>
     </div>
 
-    <!-- Firebase 및 Vercel 백엔드 연동 스크립트 -->
+    <!-- Firebase 및 스마트 하이브리드 연동 스크립트 -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDVYZ8Ol-Z5LScieWYs3b9Wrgoqtq5Ed_s",
@@ -1208,6 +1208,9 @@
         } catch (error) {
             console.error('Firebase 초기화 오류:', error);
         }
+
+        // 구글 직접 호출용 백업 토큰
+        const DIRECT_GEMINI_KEY = "AQ.Ab8RN6KRTJL9viC1irpnLMhpPTsAurnPPhrdXXnCWNxEUEBq6g";
 
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -1345,25 +1348,117 @@
 
 
             /* --------------------------------------------------------------------------
-             * Vercel 백엔드 (/api/analyze) 호출 함수
-             * Vercel의 process.env.GEMINI_API_KEY 환경변수를 통해 Gemini 3.6 Flash 호출
+             * 스마트 하이브리드 AI 분석 파이프라인
+             * 1차: Vercel 백엔드 (/api/analyze) 호출
+             * 2차: 로컬 서버이거나 404 시 브라우저에서 Google Gemini 직접 호출로 자동 폴백
              * -------------------------------------------------------------------------- */
-            async function requestGeminiAnalysis(diaryText) {
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: diaryText })
-                });
+            async function executeHybridGeminiAnalysis(diaryText) {
+                // 1단계: Vercel 백엔드 /api/analyze 시도
+                try {
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: diaryText })
+                    });
 
-                const data = await response.json().catch(() => ({}));
-
-                if (response.ok && data && data.feedbackMessage) {
-                    return data;
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.feedbackMessage) return data;
+                    }
+                    
+                    // 만약 404가 아닌 다른 구글 에러(500 등)라면 백엔드가 전달한 에러를 가져옴
+                    if (response.status !== 404) {
+                        const errData = await response.json().catch(() => ({}));
+                        const err = new Error(errData.error || 'Vercel 백엔드 처리 오류');
+                        err.status = response.status;
+                        err.details = errData;
+                        throw err;
+                    }
+                } catch (e) {
+                    // 404이거나 로컬 서버 네트워크 오류인 경우 2단계(직접 호출)로 매끄럽게 전환
+                    if (e.status && e.status !== 404) throw e;
+                    console.log('로컬 환경 또는 /api/analyze 404 감지 -> 구글 Gemini 직접 통신 모드로 자동 전환합니다.');
                 }
 
-                const err = new Error(data.error || 'AI 분석 요청에 실패했습니다.');
-                err.status = response.status;
-                err.details = data;
+                // 2단계: 구글 공식 API 직접 호출 (로컬 개발 서버 지원)
+                return await callGoogleGeminiDirect(diaryText);
+            }
+
+            async function callGoogleGeminiDirect(diaryText) {
+                const prompt = `
+당신은 사람들의 지친 마음을 다정하게 위로하고 깊이 공감해 주는 1:1 전문 심리상담 AI입니다.
+사용자가 작성한 아래 일기 전체를 읽고, 일기에 등장하는 구체적인 행동, 사건, 인물, 그리고 마음의 결을 정밀하게 분석하여 따뜻한 공감 편지글을 작성해 주세요.
+
+[사용자의 일기 내용]:
+${diaryText.trim()}
+
+반드시 아래 JSON 형식으로만 순수하게 응답해 주세요:
+{
+  "emotionName": "일기 내용에 딱 맞는 구체적인 대표 감정 (예: 새로운 시작을 앞둔 긴장과 설렘, 친구와 함께한 다정한 온기, 지친 하루 끝의 나른한 휴식 등)",
+  "emotionEmoji": "해당 감정을 가장 잘 나타내는 이모지 1개 (예: 🌸, 👭, ⏳, ☕, 🛋️, 🌤️, 🎬, 🔥, 🫂 등)",
+  "emotionKey": "영문 감정 키 (joy, sadness, anger, anxiety, calmness, achievement 중 1개)",
+  "feedbackMessage": "일기 속에 등장한 구체적인 내용과 작성자의 마음을 직접 언급하며 건네는 3~5문장의 따뜻하고 다정한 1:1 맞춤 심리상담 편지글 (존댓말 사용)",
+  "aiTip": "💡 오늘 밤 실천할 수 있는 구체적인 힐링 팁 1줄"
+}
+`;
+
+                const requestBody = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: prompt }]
+                        }
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                        responseMimeType: "application/json"
+                    }
+                };
+
+                const endpoints = [
+                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+                    'https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent',
+                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-pro:generateContent',
+                    'https://generativelanguage.googleapis.com/v1/models/gemini-3.6-pro:generateContent'
+                ];
+
+                let errors = [];
+
+                // Bearer 토큰 및 파라미터 헤더 동시 적용
+                for (const url of endpoints) {
+                    try {
+                        const res = await fetch(`${url}?key=${DIRECT_GEMINI_KEY}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-goog-api-key': DIRECT_GEMINI_KEY,
+                                'Authorization': `Bearer ${DIRECT_GEMINI_KEY}`
+                            },
+                            body: JSON.stringify(requestBody)
+                        });
+
+                        if (res.ok) {
+                            const result = await res.json();
+                            const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (rawText) {
+                                let cleaned = rawText.trim();
+                                if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+                                else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\n?/, '').replace(/\n?```$/, '');
+                                return JSON.parse(cleaned);
+                            }
+                        } else {
+                            const errJson = await res.json().catch(() => ({}));
+                            errors.push({ target: url, status: res.status, details: errJson });
+                        }
+                    } catch (e) {
+                        errors.push({ target: url, status: 'FetchError', details: e.message });
+                    }
+                }
+
+                const firstErr = errors[0] || {};
+                const err = new Error('Google Gemini API 호출 실패');
+                err.status = firstErr.status || 'API Error';
+                err.details = errors;
                 throw err;
             }
 
@@ -1385,7 +1480,7 @@
                 setLoadingState(true);
 
                 try {
-                    const analysisResult = await requestGeminiAnalysis(textContent);
+                    const analysisResult = await executeHybridGeminiAnalysis(textContent);
 
                     currentAnalysisData = {
                         date: getFormattedCurrentDate(),
@@ -1401,7 +1496,7 @@
                     renderAnalysisResult(analysisResult);
 
                 } catch (error) {
-                    console.error('Google Gemini API 오류 상세:', error);
+                    console.error('AI 분석 오류 상세:', error);
                     renderErrorResult(error);
                 } finally {
                     setLoadingState(false);
@@ -1445,7 +1540,7 @@
             }
 
             function renderErrorResult(error) {
-                errorCodeBadge.textContent = error.status ? `HTTP ${error.status}` : '서버 통신 실패';
+                errorCodeBadge.textContent = error.status ? `HTTP ${error.status}` : '통신 오류';
                 
                 let errorString = '';
                 if (typeof error.details === 'object') {
@@ -1454,7 +1549,7 @@
                     errorString = error.details || error.message || error.statusText || JSON.stringify(error);
                 }
 
-                errorDetailsBox.textContent = `[에러 내용 전문]:\n${errorString}`;
+                errorDetailsBox.textContent = `[상세 오류 내용]:\n${errorString}`;
 
                 aiDefaultMessage.classList.add('hidden');
                 aiLoadingMessage.classList.add('hidden');
