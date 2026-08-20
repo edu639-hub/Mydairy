@@ -1,0 +1,17 @@
+{
+  "name": "emotional-ai-diary",
+  "version": "1.0.0",
+  "description": "Google Gemini 3.6 Flash & Firebase Emotional Diary",
+  "type": "module",
+  "scripts": {
+    "start": "node api/analyze.js"
+  },
+  "keywords": [
+    "gemini",
+    "diary",
+    "firebase",
+    "vercel"
+  ],
+  "author": "",
+  "license": "ISC"
+}

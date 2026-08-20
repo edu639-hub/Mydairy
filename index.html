@@ -1055,7 +1055,7 @@
                 </div>
                 <div class="ai-engine-badge">
                     <span class="ai-dot"></span>
-                    <span id="aiEngineStatusText">Gemini 3.6 Flash 실시간 직접 연동</span>
+                    <span id="aiEngineStatusText">Vercel & Gemini 3.6 Flash 연동</span>
                 </div>
             </div>
             
@@ -1115,17 +1115,17 @@
 
                     <div id="aiLoadingMessage" class="ai-loading-message hidden">
                         <div class="loading-spinner"></div>
-                        <p class="loading-text">Google Gemini 3.6 Flash AI 서버와 통신 중입니다...</p>
+                        <p class="loading-text">Google Gemini 3.6 Flash AI가 분석 중입니다...</p>
                         <span class="loading-subtext">일기 전체를 분석하여 맞춤형 공감 답변을 생성하고 있습니다 ✨</span>
                     </div>
 
                     <!-- 오류 발생 시 투명하게 출력되는 에러 카드 -->
                     <div id="aiErrorContent" class="ai-error-content hidden">
                         <div class="error-header">
-                            <span>❌ Google Gemini API 통신 오류 발생</span>
-                            <span id="errorCodeBadge" class="error-code-badge">HTTP Error</span>
+                            <span>❌ AI 분석 처리 오류 안내</span>
+                            <span id="errorCodeBadge" class="error-code-badge">Error</span>
                         </div>
-                        <p class="error-guide-text">구글 API 서버로부터 정상적인 응답을 받지 못했습니다. 아래 상세 오류 메시지를 확인해 주세요:</p>
+                        <p class="error-guide-text">서버로부터 응답을 처리하는 중 오류가 발생했습니다. 아래 상세 내용을 확인해 주세요:</p>
                         <div id="errorDetailsBox" class="error-details-box"></div>
                     </div>
 
@@ -1190,7 +1190,7 @@
         <span>☁️ 파이어베이스 클라우드에 안전하게 저장되었습니다!</span>
     </div>
 
-    <!-- Firebase 및 Google Gemini 실시간 연동 스크립트 -->
+    <!-- Firebase 및 Vercel 백엔드 연동 스크립트 -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDVYZ8Ol-Z5LScieWYs3b9Wrgoqtq5Ed_s",
@@ -1208,9 +1208,6 @@
         } catch (error) {
             console.error('Firebase 초기화 오류:', error);
         }
-
-        // 사용자의 구글 API 토큰
-        const USER_GEMINI_API_KEY = "AQ.Ab8RN6KRTJL9viC1irpnLMhpPTsAurnPPhrdXXnCWNxEUEBq6g";
 
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -1348,151 +1345,26 @@
 
 
             /* --------------------------------------------------------------------------
-             * Google Gemini 3.6 Flash 실시간 분석 요청 함수
-             * 1) Vercel 서버리스(/api/analyze) 우선 호출
-             * 2) 구글 공식 엔드포인트에 Authorization: Bearer 헤더로 직접 통신
+             * Vercel 백엔드 (/api/analyze) 호출 함수
+             * Vercel의 process.env.GEMINI_API_KEY 환경변수를 통해 Gemini 3.6 Flash 호출
              * -------------------------------------------------------------------------- */
-            async function callGeminiAnalysis(diaryText) {
-                let allErrors = [];
+            async function requestGeminiAnalysis(diaryText) {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: diaryText })
+                });
 
-                // 1. Vercel 서버리스 함수 (/api/analyze) 호출 시도
-                try {
-                    const serverlessResponse = await fetch('/api/analyze', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: diaryText })
-                    });
+                const data = await response.json().catch(() => ({}));
 
-                    if (serverlessResponse.ok) {
-                        const data = await serverlessResponse.json();
-                        if (data && data.feedbackMessage) return data;
-                    } else {
-                        const err = await serverlessResponse.json().catch(() => ({}));
-                        allErrors.push({
-                            target: 'Vercel Serverless /api/analyze',
-                            status: serverlessResponse.status,
-                            statusText: serverlessResponse.statusText,
-                            details: err
-                        });
-                    }
-                } catch (e) {
-                    allErrors.push({
-                        target: 'Vercel Serverless /api/analyze',
-                        status: 'Not available locally / network error',
-                        details: e.message
-                    });
+                if (response.ok && data && data.feedbackMessage) {
+                    return data;
                 }
 
-                // 2. 구글 공식 엔드포인트 직접 호출 (Bearer 토큰 헤더 적용)
-                const prompt = `
-당신은 사람들의 지친 마음을 다정하게 위로하고 깊이 공감해 주는 1:1 전문 심리상담 AI입니다.
-사용자가 작성한 아래 일기 전체를 읽고, 일기에 등장하는 구체적인 행동, 사건, 인물, 그리고 마음의 결을 정밀하게 분석하여 따뜻한 공감 편지글을 작성해 주세요.
-
-[사용자의 일기 내용]:
-${diaryText.trim()}
-
-반드시 아래 JSON 형식으로만 순수하게 응답해 주세요:
-{
-  "emotionName": "일기 내용에 딱 맞는 구체적인 대표 감정 (예: 새로운 시작을 앞둔 긴장과 설렘, 친구와 함께한 다정한 온기, 지친 하루 끝의 나른한 휴식 등)",
-  "emotionEmoji": "해당 감정을 가장 잘 나타내는 이모지 1개 (예: 🌸, 👭, ⏳, ☕, 🛋️, 🌤️, 🎬, 🔥, 🫂 등)",
-  "emotionKey": "영문 감정 키 (joy, sadness, anger, anxiety, calmness, achievement 중 1개)",
-  "feedbackMessage": "일기 속에 등장한 구체적인 내용과 작성자의 마음을 직접 언급하며 건네는 3~5문장의 따뜻하고 다정한 1:1 맞춤 심리상담 편지글 (존댓말 사용)",
-  "aiTip": "💡 오늘 밤 실천할 수 있는 구체적인 힐링 팁 1줄"
-}
-`;
-
-                const requestBody = {
-                    contents: [
-                        {
-                            role: "user",
-                            parts: [{ text: prompt }]
-                        }
-                    ],
-                    generationConfig: {
-                        temperature: 0.7,
-                        responseMimeType: "application/json"
-                    }
-                };
-
-                const directEndpoints = [
-                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
-                    'https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent',
-                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-pro:generateContent',
-                    'https://generativelanguage.googleapis.com/v1/models/gemini-3.6-pro:generateContent'
-                ];
-
-                // Bearer 토큰 인증 (AQ.Ab8... 토큰 전용 규격)
-                for (const url of directEndpoints) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${USER_GEMINI_API_KEY}`
-                            },
-                            body: JSON.stringify(requestBody)
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-                            const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if (rawText) {
-                                let cleaned = rawText.trim();
-                                if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-                                else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\n?/, '').replace(/\n?```$/, '');
-                                return JSON.parse(cleaned);
-                            }
-                        } else {
-                            const errorJson = await response.json().catch(() => ({}));
-                            allErrors.push({
-                                target: url,
-                                auth: 'Authorization: Bearer',
-                                status: response.status,
-                                statusText: response.statusText,
-                                details: errorJson
-                            });
-                        }
-                    } catch (e) {
-                        allErrors.push({
-                            target: url,
-                            auth: 'Authorization: Bearer',
-                            status: 'Network / CORS Error',
-                            statusText: e.message,
-                            details: e.toString()
-                        });
-                    }
-                }
-
-                // x-goog-api-key 헤더 방식 시도
-                for (const url of directEndpoints) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-goog-api-key': USER_GEMINI_API_KEY
-                            },
-                            body: JSON.stringify(requestBody)
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-                            const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if (rawText) {
-                                let cleaned = rawText.trim();
-                                if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-                                else if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```\n?/, '').replace(/\n?```$/, '');
-                                return JSON.parse(cleaned);
-                            }
-                        }
-                    } catch (e) {}
-                }
-
-                const primaryError = allErrors[0] || {};
-                const combinedError = new Error('Google Gemini 3.6 Flash 호출 실패');
-                combinedError.status = primaryError.status || 'API Error';
-                combinedError.details = allErrors;
-                throw combinedError;
+                const err = new Error(data.error || 'AI 분석 요청에 실패했습니다.');
+                err.status = response.status;
+                err.details = data;
+                throw err;
             }
 
 
@@ -1513,7 +1385,7 @@ ${diaryText.trim()}
                 setLoadingState(true);
 
                 try {
-                    const analysisResult = await callGeminiAnalysis(textContent);
+                    const analysisResult = await requestGeminiAnalysis(textContent);
 
                     currentAnalysisData = {
                         date: getFormattedCurrentDate(),
@@ -1540,7 +1412,7 @@ ${diaryText.trim()}
                 if (isLoading) {
                     analyzeBtn.disabled = true;
                     voiceBtn.disabled = true;
-                    analyzeBtnText.textContent = 'Gemini 3.6 Flash 호출 중...';
+                    analyzeBtnText.textContent = 'Gemini 3.6 Flash 분석 중...';
                     aiDefaultMessage.classList.add('hidden');
                     aiResultContent.classList.add('hidden');
                     aiErrorContent.classList.add('hidden');
@@ -1573,7 +1445,7 @@ ${diaryText.trim()}
             }
 
             function renderErrorResult(error) {
-                errorCodeBadge.textContent = error.status ? `HTTP ${error.status}` : 'API 통신 실패';
+                errorCodeBadge.textContent = error.status ? `HTTP ${error.status}` : '서버 통신 실패';
                 
                 let errorString = '';
                 if (typeof error.details === 'object') {
@@ -1582,7 +1454,7 @@ ${diaryText.trim()}
                     errorString = error.details || error.message || error.statusText || JSON.stringify(error);
                 }
 
-                errorDetailsBox.textContent = `[에러 내용 전문]:\n${errorString}\n\n[사용된 토큰]:\n${USER_GEMINI_API_KEY.slice(0, 8)}... (총 ${USER_GEMINI_API_KEY.length}자)`;
+                errorDetailsBox.textContent = `[에러 내용 전문]:\n${errorString}`;
 
                 aiDefaultMessage.classList.add('hidden');
                 aiLoadingMessage.classList.add('hidden');
