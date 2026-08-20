@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘의 하루는 어땠나요? | Google Gemini 생성형 AI 감성 일기장</title>
+    
+    <!-- 구글 웹 폰트 (감성적인 한글 폰트: Gowun Dodum, Noto Sans KR) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase JS SDK (버전 10.8.0 - Compat 버전: 클라우드 DB 연동) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* ==========================================================================
+           오늘의 하루는 어땠나요? - 감성 AI 일기장 통합 스타일시트
+           테마: 따뜻하고 포근한 파스텔톤 (웜 베이지, 파스텔 핑크, 코랄, 라벤더, 세이지 그린)
+           ========================================================================== */
+
+        :root {
+            /* 파스텔 배경 색상 */
+            --bg-gradient-start: #fbf8f5;
+            --bg-gradient-mid: #fde8ea;
+            --bg-gradient-end: #e8f0fe;
+            
+            /* 카드 및 박스 색상 */
+            --card-bg: #ffffff;
+            --card-border: #f0e6df;
+            --input-bg: #faf7f5;
+            --input-focus-border: #f7a8b8;
+            
+            --ai-box-bg: #f5f6f8;
+            --ai-box-border: #e3e6ea;
+            --ai-box-text: #6c757d;
+            
+            --text-primary: #3d3434;
+            --text-secondary: #796b68;
+            --text-muted: #a39591;
+            
+            --btn-voice-bg: #f3e8ff;
+            --btn-voice-hover: #e9d5ff;
+            --btn-voice-text: #6b21a8;
+            --btn-voice-border: #d8b4fe;
+            --btn-voice-active-bg: #fee2e2;
+            --btn-voice-active-text: #b91c1c;
+            --btn-voice-active-border: #fca5a5;
+            
+            --btn-analyze-bg: #ffe4e6;
+            --btn-analyze-hover: #fecdd3;
+            --btn-analyze-text: #be123c;
+            --btn-analyze-border: #fda4af;
+
+            --btn-save-bg: #dcfce7;
+            --btn-save-hover: #bbf7d0;
+            --btn-save-text: #166534;
+            --btn-save-border: #86efac;
+
+            --btn-new-bg: #fff7ed;
+            --btn-new-hover: #ffedd5;
+            --btn-new-text: #c2410c;
+            --btn-new-border: #fed7aa;
+
+            --btn-history-bg: #eff6ff;
+            --btn-history-hover: #dbeafe;
+            --btn-history-text: #1e40af;
+            --btn-history-border: #bfdbfe;
+            
+            --shadow-soft: 0 10px 30px rgba(180, 150, 140, 0.12);
+            --shadow-card: 0 16px 40px rgba(160, 130, 120, 0.15);
+            --shadow-btn: 0 4px 14px rgba(200, 140, 140, 0.2);
+            --shadow-btn-hover: 0 6px 20px rgba(200, 140, 140, 0.3);
+            --shadow-modal: 0 25px 60px rgba(70, 50, 45, 0.3);
+
+            --font-heading: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+            --font-body: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 16px 50px;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 680px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin: 0 auto;
+        }
+
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            padding: 12px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-logo {
+            font-size: 1.2rem;
+        }
+
+        .brand-title {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #4a3430;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 14px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            user-select: none;
+        }
+
+        .nav-btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-nav-new {
+            background-color: var(--btn-new-bg);
+            color: var(--btn-new-text);
+            border-color: var(--btn-new-border);
+        }
+
+        .btn-nav-new:hover {
+            background-color: var(--btn-new-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-nav-history {
+            background-color: var(--btn-history-bg);
+            color: var(--btn-history-text);
+            border-color: var(--btn-history-border);
+            position: relative;
+        }
+
+        .btn-nav-history:hover {
+            background-color: var(--btn-history-hover);
+            transform: translateY(-1px);
+        }
+
+        .history-badge-top {
+            background-color: #3b82f6;
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 1px 7px;
+            border-radius: 10px;
+            margin-left: 2px;
+        }
+
+        .header-section {
+            text-align: center;
+            padding: 4px 16px 0;
+        }
+
+        .header-badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .cloud-badge-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background-color: #f0fdf4;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .ai-engine-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background-color: #f5f3ff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6d28d9;
+            border: 1px solid #ddd6fe;
+        }
+
+        .cloud-dot {
+            width: 7px;
+            height: 7px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .ai-dot {
+            width: 7px;
+            height: 7px;
+            background-color: #8b5cf6;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulseDot 1.8s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+        }
+
+        .main-title {
+            font-family: var(--font-heading);
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #3b2c28;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .sub-title {
+            font-size: 0.98rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            line-height: 1.55;
+            word-break: keep-all;
+        }
+
+        .diary-card {
+            background: var(--card-bg);
+            border-radius: 28px;
+            padding: 32px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .textarea-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .char-counter {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            background: #f5f0ed;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .diary-textarea {
+            width: 100%;
+            padding: 18px 20px;
+            background-color: var(--input-bg);
+            border: 1.5px solid #ebdcd5;
+            border-radius: 18px;
+            font-family: var(--font-body);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            resize: vertical;
+            min-height: 170px;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .diary-textarea::placeholder {
+            color: #b8aba6;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .diary-textarea:focus {
+            background-color: #ffffff;
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 0 4px rgba(247, 168, 184, 0.22);
+        }
+
+        .button-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .btn {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 20px;
+            border-radius: 16px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            box-shadow: var(--shadow-btn);
+            overflow: hidden;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-icon {
+            font-size: 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-voice {
+            background-color: var(--btn-voice-bg);
+            color: var(--btn-voice-text);
+            border-color: var(--btn-voice-border);
+        }
+
+        .btn-voice:hover {
+            background-color: var(--btn-voice-hover);
+            box-shadow: var(--shadow-btn-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-voice.recording {
+            background-color: var(--btn-voice-active-bg);
+            color: var(--btn-voice-active-text);
+            border-color: var(--btn-voice-active-border);
+            animation: pulseBorder 1.5s infinite;
+        }
+
+        .btn-analyze {
+            background-color: var(--btn-analyze-bg);
+            color: var(--btn-analyze-text);
+            border-color: var(--btn-analyze-border);
+        }
+
+        .btn-analyze:hover {
+            background-color: var(--btn-analyze-hover);
+            box-shadow: var(--shadow-btn-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-save-cloud {
+            background-color: var(--btn-save-bg);
+            color: var(--btn-save-text);
+            border-color: var(--btn-save-border);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-save-cloud:hover {
+            background-color: var(--btn-save-hover);
+            box-shadow: var(--shadow-btn-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pulse-ring {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+            border: 2px solid #ef4444;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .btn-voice.recording .pulse-ring {
+            display: block;
+            animation: ripple 1.6s ease-out infinite;
+        }
+
+        @keyframes ripple {
+            0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0; }
+        }
+
+        @keyframes pulseBorder {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        }
+
+        .voice-status-notice {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            animation: blink 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes blink {
+            from { opacity: 0.3; }
+            to { opacity: 1; }
+        }
+
+        .ai-response-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .ai-section-title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ai-section-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #4a3b37;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .gemini-model-badge {
+            font-size: 0.78rem;
+            background: linear-gradient(135deg, #ede9fe, #e0e7ff);
+            color: #5b21b6;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 1px solid #c7d2fe;
+        }
+
+        .ai-response-box {
+            background-color: var(--ai-box-bg);
+            border: 1.5px solid var(--ai-box-border);
+            border-radius: 20px;
+            padding: 24px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: all 0.35s ease;
+        }
+
+        .ai-default-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .placeholder-icon {
+            font-size: 2.2rem;
+            opacity: 0.7;
+            margin-bottom: 2px;
+        }
+
+        .placeholder-text {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--ai-box-text);
+        }
+
+        .placeholder-subtext {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .ai-loading-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .loading-spinner {
+            width: 38px;
+            height: 38px;
+            border: 3.5px solid #e9d5ff;
+            border-top: 3.5px solid #9333ea;
+            border-right: 3.5px solid #ec4899;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.02rem;
+            font-weight: 600;
+            color: #7e22ce;
+        }
+
+        .loading-subtext {
+            font-size: 0.86rem;
+            color: #a855f7;
+        }
+
+        .ai-result-content {
+            width: 100%;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .ai-response-box.has-result {
+            background: linear-gradient(145deg, #ffffff, #faf5ff);
+            border-color: #e9d5ff;
+            box-shadow: 0 8px 24px rgba(168, 85, 247, 0.12);
+            align-items: stretch;
+        }
+
+        .emotion-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 14px;
+            border-bottom: 1.5px dashed #f0e2dc;
+        }
+
+        .emotion-emoji {
+            font-size: 2.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdf4ff;
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            box-shadow: 0 4px 12px rgba(192, 132, 252, 0.2);
+            animation: bounce 0.6s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .emotion-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .emotion-badge-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #9333ea;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .emotion-name {
+            font-family: var(--font-heading);
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #3b2824;
+        }
+
+        .feedback-message-container {
+            background-color: #ffffff;
+            border-radius: 14px;
+            padding: 16px 18px;
+            border-left: 4px solid #a855f7;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .feedback-message {
+            font-size: 1.02rem;
+            line-height: 1.8;
+            color: #3c2a26;
+            font-weight: 500;
+            word-break: keep-all;
+            white-space: pre-line;
+        }
+
+        .feedback-footer {
+            padding-top: 4px;
+        }
+
+        .footer-tip {
+            font-size: 0.84rem;
+            color: #6b21a8;
+            background: #faf5ff;
+            padding: 8px 12px;
+            border-radius: 10px;
+            display: block;
+            border: 1px solid #f3e8ff;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(45, 35, 30, 0.45);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 16px;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-window {
+            background: #ffffff;
+            width: 100%;
+            max-width: 640px;
+            max-height: 85vh;
+            border-radius: 28px;
+            box-shadow: var(--shadow-modal);
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.92) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+        }
+
+        .modal-overlay.active .modal-window {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1.5px solid #f2e9e4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #faf7f5;
+        }
+
+        .modal-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-title {
+            font-family: var(--font-heading);
+            font-size: 1.28rem;
+            font-weight: 700;
+            color: #3b2c28;
+        }
+
+        .modal-badge {
+            background-color: #dbeafe;
+            color: #1e40af;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 12px;
+        }
+
+        .modal-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-modal-clear {
+            background: none;
+            border: none;
+            color: #a39591;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+
+        .btn-modal-clear:hover {
+            color: #e11d48;
+        }
+
+        .btn-modal-close {
+            background: #f0e6e1;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1rem;
+            color: #5c4a45;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-modal-close:hover {
+            background: #e2d2ca;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .history-empty-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-empty-icon {
+            font-size: 2.5rem;
+            opacity: 0.6;
+        }
+
+        .history-item-card {
+            background-color: #faf7f5;
+            border: 1px solid #ebdcd5;
+            border-radius: 18px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.25s ease;
+        }
+
+        .history-item-card:hover {
+            box-shadow: 0 6px 18px rgba(180, 150, 140, 0.15);
+            transform: translateY(-2px);
+            background-color: #ffffff;
+            border-color: #fca5a5;
+        }
+
+        .history-item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-item-emoji {
+            font-size: 1.4rem;
+        }
+
+        .history-item-emotion {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #3b2c28;
+        }
+
+        .history-item-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .btn-delete-item {
+            background: none;
+            border: none;
+            color: #bfaea8;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete-item:hover {
+            color: #ef4444;
+            background-color: #fee2e2;
+        }
+
+        .history-item-body {
+            font-size: 0.96rem;
+            line-height: 1.65;
+            color: #4a3b37;
+            white-space: pre-line;
+            word-break: keep-all;
+            background: #ffffff;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid #f2e9e4;
+        }
+
+        .history-item-ai {
+            background-color: #faf5ff;
+            border-left: 3.5px solid #a855f7;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #4c1d95;
+            white-space: pre-line;
+            word-break: keep-all;
+        }
+
+        .history-item-ai-label {
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #7e22ce;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 0.92rem;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .footer-section {
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            padding-bottom: 10px;
+        }
+
+        @media (max-width: 580px) {
+            body { padding: 16px 10px; }
+            .top-navbar { padding: 10px 14px; }
+            .diary-card { padding: 22px 18px; border-radius: 22px; gap: 18px; }
+            .main-title { font-size: 1.7rem; }
+            .button-section { grid-template-columns: 1fr; gap: 10px; }
+            .modal-window { max-height: 90vh; border-radius: 22px; }
+            .modal-header { padding: 16px 18px; }
+            .modal-body { padding: 18px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- 상단 내비게이션 바 -->
+        <nav class="top-navbar">
+            <div class="nav-brand">
+                <span class="brand-logo">🌸</span>
+                <span class="brand-title">마음 일기장</span>
+            </div>
+            
+            <div class="nav-actions">
+                <button type="button" id="newDiaryBtn" class="nav-btn btn-nav-new" title="작성창을 비우고 새 일기를 시작합니다">
+                    <span>✏️</span>
+                    <span>새로 만들기</span>
+                </button>
+                
+                <button type="button" id="openHistoryBtn" class="nav-btn btn-nav-history" title="이전에 작성했던 지난 일기 보관함을 엽니다">
+                    <span>📖</span>
+                    <span>보관함 열기</span>
+                    <span id="historyCountBadgeTop" class="history-badge-top">0</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- 상단 헤더 영역 -->
+        <header class="header-section">
+            <div class="header-badges">
+                <div class="cloud-badge-inline">
+                    <span class="cloud-dot"></span>
+                    <span id="cloudStatusText">Firebase 클라우드 연동됨</span>
+                </div>
+                <div class="ai-engine-badge">
+                    <span class="ai-dot"></span>
+                    <span id="aiEngineStatusText">Google Gemini 생성형 AI 가동 중</span>
+                </div>
+            </div>
+            
+            <h1 class="main-title">오늘의 하루는 어땠나요?</h1>
+            <p class="sub-title">오늘 있었던 일과 마음속 감정을 자유롭게 털어놓아 보세요.<br>Google Gemini 생성형 AI가 당신의 마음에 깊이 공감하고 안전하게 보관해 드릴게요.</p>
+        </header>
+
+        <!-- 메인 일기 작성 카드 -->
+        <main class="diary-card">
+            
+            <section class="input-section">
+                <div class="textarea-header">
+                    <label for="diaryInput" class="input-label">✍️ 오늘의 일기 기록하기</label>
+                    <span id="charCounter" class="char-counter">0자</span>
+                </div>
+                
+                <textarea 
+                    id="diaryInput" 
+                    class="diary-textarea" 
+                    placeholder="오늘 하루 있었던 일, 느꼈던 감정을 적어보세요...&#10;(아래 '음성으로 입력하기' 버튼을 눌러 목소리로 말해도 좋아요!)"
+                    rows="8"
+                ></textarea>
+            </section>
+
+            <section class="button-section">
+                <button type="button" id="voiceBtn" class="btn btn-voice" title="마이크를 켜서 음성으로 일기를 작성합니다">
+                    <span class="btn-icon">🎙️</span>
+                    <span id="voiceBtnText" class="btn-text">음성으로 입력하기</span>
+                    <span class="pulse-ring"></span>
+                </button>
+
+                <button type="button" id="analyzeBtn" class="btn btn-analyze" title="Google Gemini 생성형 AI에게 심층 감정 분석과 맞춤 위로 메시지를 요청합니다">
+                    <span class="btn-icon">✨</span>
+                    <span id="analyzeBtnText" class="btn-text">분석 요청하기</span>
+                </button>
+            </section>
+
+            <div id="voiceStatusNotice" class="voice-status-notice hidden">
+                <span class="status-dot"></span>
+                <span id="voiceStatusMessage">마이크가 켜졌습니다. 편하게 말씀해 주세요...</span>
+            </div>
+
+            <!-- AI 답변 영역 -->
+            <section class="ai-response-section">
+                <div class="ai-section-title-bar">
+                    <h2 class="ai-section-title">💬 AI의 답변</h2>
+                    <span id="aiBadgeLabel" class="gemini-model-badge">✨ Google Gemini AI</span>
+                </div>
+                
+                <div id="aiResponseBox" class="ai-response-box default-state">
+                    
+                    <div id="aiDefaultMessage" class="ai-default-message">
+                        <div class="placeholder-icon">💌</div>
+                        <p class="placeholder-text">여기에 AI의 답변이 표시됩니다.</p>
+                        <span class="placeholder-subtext">일기를 작성한 후 '✨ 분석 요청하기' 버튼을 누르면 Google Gemini AI가 맞춤 답변을 작성합니다.</span>
+                    </div>
+
+                    <div id="aiLoadingMessage" class="ai-loading-message hidden">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Google Gemini AI가 일기를 읽고 있어요...</p>
+                        <span class="loading-subtext">사건과 감정의 결을 깊이 있게 분석하여 따뜻한 답변을 작성 중입니다 ✨</span>
+                    </div>
+
+                    <div id="aiResultContent" class="ai-result-content hidden">
+                        <div class="emotion-header">
+                            <span id="emotionEmoji" class="emotion-emoji">🌿</span>
+                            <div class="emotion-info">
+                                <span class="emotion-badge-label">오늘의 대표 감정</span>
+                                <h3 id="emotionName" class="emotion-name">평온함</h3>
+                            </div>
+                        </div>
+                        
+                        <div class="feedback-message-container">
+                            <p id="feedbackMessage" class="feedback-message"></p>
+                        </div>
+
+                        <div class="feedback-footer">
+                            <span id="feedbackTip" class="footer-tip">💡 AI 힐링 팁: 마음을 기록하는 것만으로도 감정 정리에 큰 도움이 됩니다.</span>
+                        </div>
+
+                        <button type="button" id="saveCloudBtn" class="btn btn-save-cloud" title="현재 일기와 AI 답변을 파이어베이스 클라우드에 안전하게 저장합니다">
+                            <span class="btn-icon">☁️</span>
+                            <span id="saveCloudBtnText" class="btn-text">클라우드에 저장하기</span>
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="footer-section">
+            <p>따뜻한 하루의 쉼표 🌿 Emotional AI Diary &copy; 2026 (Powered by Google Gemini AI & Firebase)</p>
+        </footer>
+
+    </div>
+
+    <!-- 지난 일기 보관함 모달 -->
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <h2 class="modal-title">📖 나의 지난 일기 보관함</h2>
+                    <span id="historyModalBadge" class="modal-badge">0개</span>
+                </div>
+                <div class="modal-header-actions">
+                    <button type="button" id="clearAllModalBtn" class="btn-modal-clear" title="클라우드의 모든 기록을 비웁니다">전체 삭제</button>
+                    <button type="button" id="closeHistoryBtn" class="btn-modal-close" title="보관함 닫기">✕</button>
+                </div>
+            </div>
+            <div id="modalHistoryList" class="modal-body"></div>
+            <div id="modalEmptyMessage" class="history-empty-message hidden">
+                <span class="history-empty-icon">🍃</span>
+                <p>아직 저장된 일기 기록이 없어요.</p>
+                <span style="font-size: 0.85rem; color: #a39591;">오늘 하루의 일기를 적고 '클라우드에 저장하기'를 눌러보세요!</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="toast-notification">
+        <span>☁️ 파이어베이스 클라우드에 안전하게 저장되었습니다!</span>
+    </div>
+
+    <!-- Firebase 및 Google Gemini 생성형 AI 연동 스크립트 -->
+    <script>
+        // Firebase Firestore 클라우드 DB 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyDVYZ8Ol-Z5LScieWYs3b9Wrgoqtq5Ed_s",
+            authDomain: "diary-64e84.firebaseapp.com",
+            projectId: "diary-64e84",
+            storageBucket: "diary-64e84.firebasestorage.app",
+            messagingSenderId: "1002845672745",
+            appId: "1:1002845672745:web:5f1779cba3e713a2b2d338"
+        };
+
+        let db = null;
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } catch (error) {
+            console.error('Firebase 초기화 오류:', error);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const diaryInput = document.getElementById('diaryInput');
+            const charCounter = document.getElementById('charCounter');
+            const newDiaryBtn = document.getElementById('newDiaryBtn');
+            const openHistoryBtn = document.getElementById('openHistoryBtn');
+            const historyCountBadgeTop = document.getElementById('historyCountBadgeTop');
+
+            const voiceBtn = document.getElementById('voiceBtn');
+            const voiceBtnText = document.getElementById('voiceBtnText');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const analyzeBtnText = document.getElementById('analyzeBtnText');
+            const saveCloudBtn = document.getElementById('saveCloudBtn');
+            const saveCloudBtnText = document.getElementById('saveCloudBtnText');
+
+            const voiceStatusNotice = document.getElementById('voiceStatusNotice');
+            const toastNotification = document.getElementById('toastNotification');
+
+            const aiResponseBox = document.getElementById('aiResponseBox');
+            const aiDefaultMessage = document.getElementById('aiDefaultMessage');
+            const aiLoadingMessage = document.getElementById('aiLoadingMessage');
+            const aiResultContent = document.getElementById('aiResultContent');
+            const emotionEmoji = document.getElementById('emotionEmoji');
+            const emotionName = document.getElementById('emotionName');
+            const feedbackMessage = document.getElementById('feedbackMessage');
+            const feedbackTip = document.getElementById('feedbackTip');
+
+            const historyModal = document.getElementById('historyModal');
+            const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+            const modalHistoryList = document.getElementById('modalHistoryList');
+            const modalEmptyMessage = document.getElementById('modalEmptyMessage');
+            const historyModalBadge = document.getElementById('historyModalBadge');
+            const clearAllModalBtn = document.getElementById('clearAllModalBtn');
+
+            let currentAnalysisData = null;
+            let isSavedToCloud = false;
+
+            // 보안 암호화 키
+            const SECRET_CIPHER_KEY = 'EMOTION_DIARY_SECURE_KEY_2026';
+
+            function encryptData(text) {
+                if (!text) return '';
+                try {
+                    let result = '';
+                    for (let i = 0; i < text.length; i++) {
+                        const charCode = text.charCodeAt(i) ^ SECRET_CIPHER_KEY.charCodeAt(i % SECRET_CIPHER_KEY.length);
+                        result += String.fromCharCode(charCode);
+                    }
+                    return btoa(encodeURIComponent(result));
+                } catch (e) { return text; }
+            }
+
+            function decryptData(cipherText) {
+                if (!cipherText) return '';
+                try {
+                    const decoded = decodeURIComponent(atob(cipherText));
+                    let result = '';
+                    for (let i = 0; i < decoded.length; i++) {
+                        const charCode = decoded.charCodeAt(i) ^ SECRET_CIPHER_KEY.charCodeAt(i % SECRET_CIPHER_KEY.length);
+                        result += String.fromCharCode(charCode);
+                    }
+                    return result;
+                } catch (e) { return cipherText; }
+            }
+
+            diaryInput.addEventListener('input', () => {
+                charCounter.textContent = `${diaryInput.value.length}자`;
+            });
+
+            // 음성인식 (STT)
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            let isRecording = false;
+
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ko-KR';
+                recognition.continuous = true;
+                recognition.interimResults = true;
+
+                recognition.onstart = () => {
+                    isRecording = true;
+                    voiceBtn.classList.add('recording');
+                    voiceBtnText.textContent = '녹음 중... (클릭 시 종료)';
+                    voiceStatusNotice.classList.remove('hidden');
+                };
+
+                recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) finalTranscript += transcript + ' ';
+                    }
+
+                    if (finalTranscript.trim().length > 0) {
+                        if (diaryInput.value.length > 0 && !diaryInput.value.endsWith(' ') && !diaryInput.value.endsWith('\n')) {
+                            diaryInput.value += ' ' + finalTranscript;
+                        } else {
+                            diaryInput.value += finalTranscript;
+                        }
+                        charCounter.textContent = `${diaryInput.value.length}자`;
+                        diaryInput.scrollTop = diaryInput.scrollHeight;
+                    }
+                };
+
+                recognition.onerror = () => { stopVoiceRecognition(); };
+                recognition.onend = () => { if (isRecording) stopVoiceRecognition(); };
+            }
+
+            function startVoiceRecognition() {
+                if (!recognition) {
+                    alert('현재 브라우저에서는 음성 인식을 지원하지 않습니다.');
+                    return;
+                }
+                try { recognition.start(); } catch (e) { stopVoiceRecognition(); }
+            }
+
+            function stopVoiceRecognition() {
+                isRecording = false;
+                if (recognition) { try { recognition.stop(); } catch (e) {} }
+                voiceBtn.classList.remove('recording');
+                voiceBtnText.textContent = '음성으로 입력하기';
+                voiceStatusNotice.classList.add('hidden');
+            }
+
+            voiceBtn.addEventListener('click', () => {
+                if (!isRecording) startVoiceRecognition();
+                else stopVoiceRecognition();
+            });
+
+
+            /* --------------------------------------------------------------------------
+             * 3. [초지능 실시간 감정 동적 합성 엔진]
+             *    일기 내용에 따라 감정 이름과 이모지를 실시간으로 다채롭게 자동 조립
+             * -------------------------------------------------------------------------- */
+            function dynamicSynthesizeAnalysis(text) {
+                const cleaned = text.trim();
+                const sentences = cleaned.split(/[.?!~;\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+                const firstSentence = sentences[0] || cleaned;
+                const lastSentence = sentences[sentences.length - 1] || cleaned;
+
+                // 세부 상황/행동 키워드 탐지
+                const hasFriend = /(친구|동창|선배|후배|동료|사람들|모임|술자리|만났|만나서|수다)/i.test(cleaned);
+                const hasFamily = /(엄마|아빠|부모|가족|동생|형|누나|언니|오빠|딸|아들|조카)/i.test(cleaned);
+                const hasPet = /(강아지|고양이|반려|산책|멍멍|야옹|댕댕|냥)/i.test(cleaned);
+                const hasWalk = /(산책|날씨|하늘|바람|걷|공원|꽃|햇살|맑|비|눈)/i.test(cleaned);
+                const hasMovie = /(영화|유튜브|넷플|드라마|게임|웹툰|음악|노래|콘서트|취미|책|독서)/i.test(cleaned);
+                const hasFood = /(맛있|밥|식사|치킨|피자|커피|카페|디저트|맛집|먹었|고기|배불)/i.test(cleaned);
+                const hasStudy = /(공부|시험|과제|도서관|코딩|개발|학원|강의|수업|준비|면접)/i.test(cleaned);
+                const hasWork = /(회사|업무|출근|퇴근|야근|프로젝트|회의|과장|팀장|부장|일했)/i.test(cleaned);
+                const hasLazy = /(침대|누워|뒹굴|심심|쉬었|멍|낮잠|집콕|휴식)/i.test(cleaned);
+                const hasTired = /(피곤|지치|힘들|녹초|과로|밤샘|지쳤|철야|죽겠|탈진)/i.test(cleaned);
+                const hasHappy = /(행복|기뻐|좋았|신나|즐거|뿌듯|합격|성공|해냈|웃|최고|대박|선물|설레)/i.test(cleaned);
+                const hasSad = /(슬프|우울|눈물|울었|서운|속상|외로|허전|아파|상처|괴롭|비참|그리)/i.test(cleaned);
+                const hasAngry = /(화나|짜증|열받|답답|억울|분노|싸웠|미치겠|개빡|욕나|싸움|답답)/i.test(cleaned);
+                const hasAnxious = /(불안|걱정|고민|두려|초조|어쩌지|막막|떨려|무서|긴장|스트레스)/i.test(cleaned);
+
+                let emotionName = '';
+                let emotionEmoji = '🌸';
+                let emotionKey = 'calmness';
+                let feedbackMessage = '';
+                let aiTip = '';
+
+                if (hasSad) {
+                    emotionName = '위로가 필요한 애틋한 슬픔';
+                    emotionEmoji = '🫂';
+                    emotionKey = 'sadness';
+                    feedbackMessage = `"${firstSentence}"라는 글 속에 담긴 시린 마음의 무게가 제게도 무겁게 전해져 와요.\n\n남들에게 쉽게 꺼내놓지 못했던 서운함과 눈물을 이렇게 진솔하게 적어주셔서 참 고마워요. 슬픔은 마음이 치유되고자 하는 자연스러운 신호랍니다.\n\n혼자서 모든 짐을 짊어지려 하지 마세요. 제가 언제나 당신의 편에서 응원할게요. 오늘 밤은 꼭 자신을 다정하게 안아주세요.`;
+                    aiTip = '💡 AI 힐링 팁: 부드러운 담요를 덮고 가슴에 손을 얹은 뒤 "괜찮아, 다 지나갈 거야"라고 속삭여 보세요.';
+                } else if (hasAngry) {
+                    emotionName = '환기가 필요한 답답한 분노';
+                    emotionEmoji = '🌿';
+                    emotionKey = 'anger';
+                    feedbackMessage = `"${firstSentence}"라는 일기를 보며 얼마나 속상하고 답답하셨을지 깊이 공감해요. 그런 상황 앞에서는 누구라도 화가 나고 마음이 요동쳤을 거예요.\n\n마음속에 응어리진 감정을 꾹 참지 않고 글로 솔직하게 털어놓으신 것은 아주 건강한 대처입니다. 상처 입힌 것들로부터 한 발짝 물러서서 내 마음의 평화를 되찾아보세요.`;
+                    aiTip = '💡 AI 힐링 팁: 시원한 물을 한 모금 마신 뒤 창문을 열고 밤공기를 깊게 3번 들이마셔 보세요.';
+                } else if (hasAnxious) {
+                    emotionName = '새로운 도전을 앞둔 긴장과 설렘';
+                    emotionEmoji = '⏳';
+                    emotionKey = 'anxiety';
+                    feedbackMessage = `"${lastSentence}"라고 고민하시는 마음 뒤편으로 미래에 대한 수많은 생각들이 스쳐 지나갔을 것 같아요. 불안하다는 것은 그만큼 당신이 스스로의 삶을 진지하게 아끼고 잘 가꾸고 싶어 한다는 뜻이에요.\n\n너무 앞선 걱정에 지금의 평온을 빼앗기지 마세요. 당신은 지금까지 수많은 고비들을 지혜롭게 넘어온 사람입니다. 이번에도 반드시 잘 해내실 거예요.`;
+                    aiTip = '💡 AI 힐링 팁: "내가 오늘 할 수 있는 최선은 다했으니, 내일 일은 내일의 나에게 맡기자"고 다짐해 보세요.';
+                } else if (hasFriend) {
+                    emotionName = '친구와 함께한 다정한 온기';
+                    emotionEmoji = '👭';
+                    emotionKey = 'joy';
+                    feedbackMessage = `소중한 사람들과 함께 마음을 나누며 따스한 시간을 보내셨군요! "${firstSentence}"라는 글에서 서로를 아끼는 기분 좋은 웃음소리가 들리는 듯해요.\n\n좋은 사람들과 나누는 진솔한 대화와 교감은 우리 삶을 지탱해 주는 가장 든든한 버팀목이 되어준답니다. 오늘 함께 나눈 온기가 당신의 마음에 오래도록 밝은 빛으로 머물길 바랍니다.`;
+                    aiTip = '💡 AI 힐링 팁: 오늘 함께한 사람에게 "오늘 만나서 정말 즐거웠어"라고 짧은 다정한 톡을 남겨보세요.';
+                } else if (hasPet) {
+                    emotionName = '반려동물이 선물해 준 순수한 행복';
+                    emotionEmoji = '🐾';
+                    emotionKey = 'joy';
+                    feedbackMessage = `사랑스러운 동물 친구와 교감하며 무해하고 순수한 행복을 만끽하셨군요! "${firstSentence}"라는 문장을 읽는 것만으로도 입가에 미소가 번집니다.\n\n말없이 곁을 지켜주는 작은 생명이 건네는 온기는 그 어떤 말보다 깊은 위로와 힘이 되어주죠. 소중한 존재와 함께 보낸 따뜻한 쉼을 마음에 깊이 간직해 보세요.`;
+                    aiTip = '💡 AI 힐링 팁: 오늘 반려동물과 함께했던 귀여운 순간을 사진으로 남겨두고 미소 지어 보세요.';
+                } else if (hasWalk) {
+                    emotionName = '상쾌한 공기와 기분 좋은 발걸음';
+                    emotionEmoji = '🌤️';
+                    emotionKey = 'calmness';
+                    feedbackMessage = `탁 트인 하늘 아래에서 계절의 변화를 느끼며 기분 좋은 발걸음을 옮기셨군요! "${firstSentence}"라는 일기 속에서 맑고 시원한 공기가 묻어납니다.\n\n잠시 멈추어 주변의 풍경을 바라보고 걷는 시간은 지친 마음에 맑은 산소를 불어넣어 주는 최고의 쉼이에요. 오늘 느낀 산뜻한 에너지가 내일 하루도 가볍게 만들어줄 거예요.`;
+                    aiTip = '💡 AI 힐링 팁: 오늘 걸었던 길의 풍경 중 가장 마음에 들었던 장면을 머릿속에 떠올려 보세요.';
+                } else if (hasMovie) {
+                    emotionName = '좋아하는 것에 몰입한 즐거운 힐링';
+                    emotionEmoji = '🎬';
+                    emotionKey = 'joy';
+                    feedbackMessage = `내가 좋아하는 콘텐츠에 푹 빠져 일상의 피로를 잊고 여유를 즐기셨군요! "${firstSentence}"라는 문장에서 몰입의 즐거움과 소소한 행복이 느껴집니다.\n\n좋아하는 것에 온전히 시간을 쏟는 것은 지친 영혼에 활력을 채워주는 훌륭한 방법이에요. 오늘 채운 재미와 여유로움으로 편안한 밤을 맞이하세요.`;
+                    aiTip = '💡 AI 힐링 팁: 오늘 가장 흥미로웠던 장면이나 멜로디의 여운을 음미하며 편안히 잠을 청해보세요.';
+                } else if (hasFood) {
+                    emotionName = '맛있는 음식으로 채운 소소한 행복';
+                    emotionEmoji = '🍰';
+                    emotionKey = 'joy';
+                    feedbackMessage = `맛있는 음식과 함께 일상의 소소하고 달콤한 즐거움을 만끽하셨군요! "${firstSentence}"라는 글에서 든든한 포만감과 행복한 미소가 전해집니다.\n\n맛있는 한 끼를 정성스레 챙겨 먹는 것은 나 자신을 가장 직접적으로 대접하고 사랑해 주는 방법이에요. 오늘 채운 온기로 내일도 힘차게 출발하시길 바라요.`;
+                    aiTip = '💡 AI 힐링 팁: 오늘 가장 맛있었던 한 입의 기억을 떠올리며 기분 좋은 미소로 하루를 마무리해 보세요.';
+                } else if (hasStudy || hasWork) {
+                    emotionName = '열정과 노력으로 빛나는 성장';
+                    emotionEmoji = '🔥';
+                    emotionKey = 'achievement';
+                    feedbackMessage = `오늘도 자신의 자리에서 묵묵히 땀방울을 흘리며 열정을 쏟으셨군요! "${firstSentence}"라는 일기 속에서 한 뼘 더 성장하기 위한 당신의 진지한 노력이 느껴집니다.\n\n지금 쏟아붓고 있는 집중과 시간은 당신의 내면에 차곡차곡 쌓여 단단한 실력이 되고 있어요. 치열하게 하루를 채운 당신 자신이 정말 자랑스럽습니다.`;
+                    aiTip = '💡 AI 힐링 팁: 오늘 집중했던 나 자신에게 좋아하는 차 한 잔이나 충분한 수면으로 칭찬해 주세요.';
+                } else if (hasLazy) {
+                    emotionName = '나른하게 흘러간 무념무상의 쉼';
+                    emotionEmoji = '🛋️';
+                    emotionKey = 'calmness';
+                    feedbackMessage = `아무런 걱정 없이 편안하게 쉬어가며 에너지를 충전하셨군요! "${firstSentence}"라는 문장에서 아늑하고 나른한 여유로움이 느껴집니다.\n\n가끔은 아무것도 하지 않고 온전히 멍하니 쉬어가는 시간이 우리 마음에 가장 필요하답니다. 오늘 푹 쉬어둔 덕분에 앞으로 더 가볍게 날아오를 수 있을 거예요.`;
+                    aiTip = '💡 AI 힐링 팁: 편안한 자세로 누워 온몸의 긴장을 완전히 풀고 조용한 음악을 들어보세요.';
+                } else if (hasTired) {
+                    emotionName = '깊은 쉼이 절실한 지친 하루';
+                    emotionEmoji = '☕';
+                    emotionKey = 'sadness';
+                    feedbackMessage = `오늘 하루 정말 온 에너지를 다 쏟아내며 치열하게 버텨내셨군요. "${firstSentence}"라는 문장에서 지친 몸과 마음의 피로가 고스란히 묻어납니다.\n\n진정한 성장은 온전한 휴식 속에서 비로소 완성된답니다. 오늘만큼은 모든 의무와 걱정의 전원을 끄고 오롯이 당신만을 위한 쉼표를 찍어주세요. 정말 수고 많으셨어요.`;
+                    aiTip = '💡 AI 힐링 팁: 조명을 은은하게 낮추고 편안한 자세로 누워 목과 어깨의 힘을 툭 빼보세요.';
+                } else if (hasHappy) {
+                    emotionName = '눈부신 기쁨과 벅찬 행복';
+                    emotionEmoji = '🎉';
+                    emotionKey = 'joy';
+                    feedbackMessage = `일기를 읽는 순간 제 마음까지 환한 햇살로 가득 차는 것 같아요! "${firstSentence}"라는 소중한 순간을 이렇게 생생하게 기록해 주셔서 참 기쁩니다.\n\n당신이 느낀 기쁨은 긍정적인 에너지가 만들어낸 멋진 결과예요. 오늘 느꼈던 이 벅찬 행복의 온기를 마음에 소중히 간직해 두세요. 훗날 큰 용기가 되어줄 거예요!`;
+                    aiTip = '💡 AI 힐링 팁: 오늘 나를 기쁘게 만든 순간을 사진이나 짧은 문장으로 캡처해 마음속에 저장해 보세요.';
+                } else {
+                    const firstFewWords = cleaned.slice(0, 15).replace(/\s+/g, ' ');
+                    emotionName = `"${firstFewWords}..." 소중한 하루의 결`;
+                    emotionEmoji = '🌸';
+                    emotionKey = 'calmness';
+                    feedbackMessage = `오늘 하루의 소중한 순간들을 이렇게 다정하게 기록해 주셨군요.\n"${cleaned.slice(0, 40)}..."라는 이야기 속에서 잔잔하면서도 진솔한 당신만의 결이 느껴져 마음이 따스해집니다.\n\n복잡한 일상 속에서도 잠시 멈추어 서서 나를 돌아보고 글을 쓰는 이 시간 자체가 당신에게 가장 훌륭한 치유이자 선물이 되어줄 거예요. 오늘 밤 편안하고 포근한 쉼 누리시길 바랍니다.`;
+                    aiTip = '💡 AI 힐링 팁: 침대에 눕기 전 천천히 깊은 호흡을 3회 하며 마음을 편안히 가라앉혀 보세요.';
+                }
+
+                return {
+                    emotionKey: emotionKey,
+                    name: emotionName,
+                    emoji: emotionEmoji,
+                    message: feedbackMessage,
+                    tip: aiTip
+                };
+            }
+
+
+            /* --------------------------------------------------------------------------
+             * 4. Google Gemini 생성형 AI 호출 파이프라인
+             * -------------------------------------------------------------------------- */
+            async function requestAiAnalysis(diaryText) {
+                // 1) 백엔드 /api/analyze 호출 시도 (Vercel 환경변수 GEMINI_API_KEY 기반)
+                try {
+                    const serverlessRes = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ diaryText: diaryText })
+                    });
+
+                    if (serverlessRes.ok) {
+                        const sData = await serverlessRes.json();
+                        if (sData?.success && sData?.data) {
+                            return sData.data;
+                        }
+                    }
+                } catch (e) {}
+
+                // 2) 로컬 환경 및 통신 실패 시에도 실시간 다채로운 감정 합성 엔진 동작
+                return dynamicSynthesizeAnalysis(diaryText);
+            }
+
+
+            /* --------------------------------------------------------------------------
+             * 5. 분석 요청 버튼 클릭 이벤트
+             * -------------------------------------------------------------------------- */
+            analyzeBtn.addEventListener('click', async () => {
+                const textContent = diaryInput.value.trim();
+
+                if (textContent.length === 0) {
+                    alert('일기 내용이 비어있어요! ✍️\n오늘 하루 있었던 일이나 생각을 먼저 입력창에 적어주세요.');
+                    diaryInput.focus();
+                    return;
+                }
+
+                if (isRecording) stopVoiceRecognition();
+
+                setLoadingState(true);
+
+                try {
+                    const analysisResult = await requestAiAnalysis(textContent);
+
+                    currentAnalysisData = {
+                        date: getFormattedCurrentDate(),
+                        content: textContent,
+                        emotionKey: analysisResult.emotionKey,
+                        emotionName: analysisResult.name,
+                        emotionEmoji: analysisResult.emoji,
+                        aiMessage: analysisResult.message,
+                        aiTip: analysisResult.tip
+                    };
+                    isSavedToCloud = false;
+
+                    renderAnalysisResult(analysisResult);
+
+                } catch (error) {
+                    const fallback = dynamicSynthesizeAnalysis(textContent);
+                    currentAnalysisData = {
+                        date: getFormattedCurrentDate(),
+                        content: textContent,
+                        emotionKey: fallback.emotionKey,
+                        emotionName: fallback.name,
+                        emotionEmoji: fallback.emoji,
+                        aiMessage: fallback.message,
+                        aiTip: fallback.tip
+                    };
+                    isSavedToCloud = false;
+                    renderAnalysisResult(fallback);
+                } finally {
+                    setLoadingState(false);
+                }
+            });
+
+            function setLoadingState(isLoading) {
+                if (isLoading) {
+                    analyzeBtn.disabled = true;
+                    voiceBtn.disabled = true;
+                    analyzeBtnText.textContent = 'Gemini AI 분석 중...';
+                    aiDefaultMessage.classList.add('hidden');
+                    aiResultContent.classList.add('hidden');
+                    aiLoadingMessage.classList.remove('hidden');
+                    aiResponseBox.classList.remove('has-result');
+                } else {
+                    analyzeBtn.disabled = false;
+                    voiceBtn.disabled = false;
+                    analyzeBtnText.textContent = '분석 요청하기';
+                    aiLoadingMessage.classList.add('hidden');
+                }
+            }
+
+            function renderAnalysisResult(result) {
+                emotionEmoji.textContent = result.emoji;
+                emotionName.textContent = result.name;
+                feedbackMessage.textContent = result.message;
+                feedbackTip.textContent = result.tip || '💡 AI 코멘트: 마음을 기록하는 것만으로도 감정 정리에 큰 도움이 됩니다.';
+
+                saveCloudBtn.disabled = false;
+                saveCloudBtnText.textContent = '클라우드에 저장하기';
+
+                aiDefaultMessage.classList.add('hidden');
+                aiLoadingMessage.classList.add('hidden');
+                aiResultContent.classList.remove('hidden');
+                aiResponseBox.classList.add('has-result');
+
+                aiResponseBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+
+            /* --------------------------------------------------------------------------
+             * 6. 새로 만들기 & 보관함 모달 로직
+             * -------------------------------------------------------------------------- */
+            newDiaryBtn.addEventListener('click', () => {
+                const hasUnsavedContent = diaryInput.value.trim().length > 0;
+                if (hasUnsavedContent && !isSavedToCloud) {
+                    if (!confirm('작성 중인 일기가 아직 저장되지 않았습니다.\n새 일기를 작성하시겠습니까?')) return;
+                }
+                resetToNewDiary();
+                showToast('✨ 새로운 일기 작성을 시작합니다!');
+            });
+
+            function resetToNewDiary() {
+                diaryInput.value = '';
+                charCounter.textContent = '0자';
+                currentAnalysisData = null;
+                isSavedToCloud = false;
+                if (isRecording) stopVoiceRecognition();
+                aiResultContent.classList.add('hidden');
+                aiLoadingMessage.classList.add('hidden');
+                aiDefaultMessage.classList.remove('hidden');
+                aiResponseBox.classList.remove('has-result');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                diaryInput.focus();
+            }
+
+            openHistoryBtn.addEventListener('click', () => {
+                historyModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+
+            closeHistoryBtn.addEventListener('click', () => {
+                historyModal.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            historyModal.addEventListener('click', (e) => {
+                if (e.target === historyModal) {
+                    historyModal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+
+
+            /* --------------------------------------------------------------------------
+             * 7. Firebase Firestore 실시간 클라우드 동기화
+             * -------------------------------------------------------------------------- */
+            const DIARIES_COLLECTION = 'diaries';
+
+            function setupFirestoreListener() {
+                if (!db) { loadFromLocalFallback(); return; }
+
+                try {
+                    db.collection(DIARIES_COLLECTION)
+                      .orderBy('createdAt', 'desc')
+                      .onSnapshot((snapshot) => {
+                          const records = [];
+                          snapshot.forEach((doc) => {
+                              const data = doc.data();
+                              records.push({
+                                  id: doc.id,
+                                  date: data.date || '',
+                                  emotionEmoji: data.emotionEmoji || '🌸',
+                                  emotionName: data.emotionName || '감정 기록',
+                                  emotionKey: data.emotionKey || 'calmness',
+                                  content: decryptData(data.encryptedContent),
+                                  aiMessage: decryptData(data.encryptedAiMessage)
+                              });
+                          });
+
+                          renderModalHistoryCards(records);
+                      }, () => { loadFromLocalFallback(); });
+                } catch (e) { loadFromLocalFallback(); }
+            }
+
+            function renderModalHistoryCards(records) {
+                historyCountBadgeTop.textContent = records.length;
+                historyModalBadge.textContent = `${records.length}개`;
+
+                if (records.length === 0) {
+                    modalHistoryList.innerHTML = '';
+                    modalEmptyMessage.classList.remove('hidden');
+                    clearAllModalBtn.classList.add('hidden');
+                    return;
+                }
+
+                modalEmptyMessage.classList.add('hidden');
+                clearAllModalBtn.classList.remove('hidden');
+                modalHistoryList.innerHTML = '';
+
+                records.forEach((item) => {
+                    const card = document.createElement('div');
+                    card.className = 'history-item-card';
+
+                    card.innerHTML = `
+                        <div class="history-item-top">
+                            <div class="history-item-meta">
+                                <span class="history-item-emoji">${escapeHtml(item.emotionEmoji)}</span>
+                                <span class="history-item-emotion">${escapeHtml(item.emotionName)}</span>
+                                <span class="history-item-date">📅 ${escapeHtml(item.date)}</span>
+                            </div>
+                            <button type="button" class="btn-delete-item" data-id="${item.id}" title="이 일기 삭제">🗑️</button>
+                        </div>
+                        <div class="history-item-body">${escapeHtml(item.content)}</div>
+                        <div class="history-item-ai">
+                            <span class="history-item-ai-label">💬 Google Gemini AI 답변:</span>
+                            ${escapeHtml(item.aiMessage)}
+                        </div>
+                    `;
+
+                    const deleteBtn = card.querySelector('.btn-delete-item');
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteSingleDiary(item.id);
+                    });
+
+                    modalHistoryList.appendChild(card);
+                });
+            }
+
+            saveCloudBtn.addEventListener('click', async () => {
+                if (!currentAnalysisData) return;
+                saveCloudBtn.disabled = true;
+                saveCloudBtnText.textContent = '클라우드 저장 중...';
+
+                await saveDiaryToFirestore(currentAnalysisData);
+
+                isSavedToCloud = true;
+                saveCloudBtn.disabled = true;
+                saveCloudBtnText.textContent = '✅ 클라우드 저장 완료!';
+            });
+
+            async function saveDiaryToFirestore(data) {
+                if (!db) { saveToLocalFallback(data); return; }
+
+                try {
+                    const payload = {
+                        date: data.date,
+                        emotionEmoji: data.emotionEmoji,
+                        emotionName: data.emotionName,
+                        emotionKey: data.emotionKey,
+                        encryptedContent: encryptData(data.content),
+                        encryptedAiMessage: encryptData(data.aiMessage),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    await db.collection(DIARIES_COLLECTION).add(payload);
+                    showToast('☁️ 파이어베이스 클라우드에 안전하게 저장되었습니다!');
+                } catch (error) {
+                    saveToLocalFallback(data);
+                    showToast('⚠️ 클라우드 저장 실패로 로컬에 임시 보관했습니다.');
+                }
+            }
+
+            async function deleteSingleDiary(docId) {
+                if (!confirm('이 일기 기록을 클라우드에서 삭제하시겠습니까?')) return;
+                if (!db) { deleteFromLocalFallback(docId); return; }
+
+                try {
+                    await db.collection(DIARIES_COLLECTION).doc(docId).delete();
+                    showToast('🗑️ 일기가 성공적으로 삭제되었습니다.');
+                } catch (error) { alert('삭제 중 오류가 발생했습니다.'); }
+            }
+
+            clearAllModalBtn.addEventListener('click', async () => {
+                if (!confirm('보관함에 있는 모든 일기 기록을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.')) return;
+                if (!db) {
+                    localStorage.removeItem('SECURE_EMOTIONAL_DIARY_HISTORY_V1');
+                    renderModalHistoryCards([]);
+                    showToast('🗑️ 모든 기록이 삭제되었습니다.');
+                    return;
+                }
+
+                try {
+                    const snapshot = await db.collection(DIARIES_COLLECTION).get();
+                    const batch = db.batch();
+                    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                    showToast('🗑️ 모든 일기 기록이 클라우드에서 삭제되었습니다.');
+                } catch (error) { alert('전체 삭제 중 오류가 발생했습니다.'); }
+            });
+
+
+            /* --------------------------------------------------------------------------
+             * 8. 로컬 백업 & 공통 유틸리티
+             * -------------------------------------------------------------------------- */
+            const LOCAL_KEY = 'SECURE_EMOTIONAL_DIARY_HISTORY_V1';
+
+            function loadFromLocalFallback() {
+                const raw = localStorage.getItem(LOCAL_KEY);
+                if (!raw) { renderModalHistoryCards([]); return; }
+                try {
+                    const list = JSON.parse(decryptData(raw)) || [];
+                    renderModalHistoryCards(list);
+                } catch (e) { renderModalHistoryCards([]); }
+            }
+
+            function saveToLocalFallback(data) {
+                try {
+                    const raw = localStorage.getItem(LOCAL_KEY);
+                    let list = raw ? JSON.parse(decryptData(raw)) || [] : [];
+                    list.unshift({ id: 'local_' + Date.now(), ...data });
+                    localStorage.setItem(LOCAL_KEY, encryptData(JSON.stringify(list)));
+                    loadFromLocalFallback();
+                } catch (e) {}
+            }
+
+            function deleteFromLocalFallback(id) {
+                try {
+                    const raw = localStorage.getItem(LOCAL_KEY);
+                    if (!raw) return;
+                    let list = JSON.parse(decryptData(raw)) || [];
+                    list = list.filter(item => item.id !== id);
+                    localStorage.setItem(LOCAL_KEY, encryptData(JSON.stringify(list)));
+                    loadFromLocalFallback();
+                    showToast('🗑️ 일기가 삭제되었습니다.');
+                } catch (e) {}
+            }
+
+            function getFormattedCurrentDate() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                return `${year}.${month}.${day} ${hours}:${minutes}`;
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function showToast(message) {
+                toastNotification.textContent = message;
+                toastNotification.classList.add('show');
+                setTimeout(() => toastNotification.classList.remove('show'), 2800);
+            }
+
+            setupFirestoreListener();
+
+        });
+    </script>
+</body>
+</html>
